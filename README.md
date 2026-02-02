@@ -8,6 +8,31 @@ Microsoft Defender for Endpoint veya standart envanter araçlarının eklenti g�
   EN: About the Project
 When browser extension visibility is limited in standard inventory tools, this project provides a cost-free solution to collect Chrome and Edge extension IDs from all clients.
 
+
+
+
+    TR: Analiz Süreci ve Çıktılar
+Bu proje, ihtiyacınıza göre size 3 farklı rapor sunar:
+
+Kullanıcı Bazlı Liste: 02_Data_Merger.ps1 çalıştırıldığında oluşur. "Hangi kullanıcıda ne var?" sorusunu yanıtlar.
+
+İstatistiksel Özet: 03_Usage_Summarizer.ps1 çalıştırıldığında oluşur. Şirket genelindeki popüler eklentileri adetleriyle gösterir.
+
+İsimlendirilmiş Final Raporu: 04_Store_Resolver.ps1 çalıştırıldığında oluşur. Eklentilerin mağaza isimlerini (Adobe, Skype vb.) rapora ekler.
+
+    EN: Analysis Process & Outputs
+This project provides 3 different reports based on your needs:
+
+User-Based List: Generated via 02_Data_Merger.ps1. Answers "Who installed what?".
+
+Statistical Summary: Generated via 03_Usage_Summarizer.ps1. Shows the most popular extensions across the company.
+
+Resolved Final Report: Generated via 04_Store_Resolver.ps1. Adds store names (Adobe, Skype, etc.) to the report.
+
+
+
+
+
     TR: 1. Aşama: Altyapı Hazırlığı (Ağ Paylaşımı)
 Scriptin çalışması için verilerin toplanacağı merkezi bir klasör oluşturulmalıdır.
 
