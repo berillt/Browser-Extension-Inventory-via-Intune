@@ -1,0 +1,130 @@
+<#
+    [TR] İHTİYAÇ: Kullanıcı bazlı detaylı rapor. Hangi kullanıcının ne yüklediğini görmek için.
+    [EN] NEED: Detailed user-based report. To see exactly what each user has installed.
+#>
+
+<#
+    TR: ADIM 1 - Klasördeki tüm kullanıcı CSV dosyalarını tek bir ham listede birleştirir.
+    EN: STEP 1 - Merges all user CSV files in the folder into a single raw list.
+#>
+
+# TR: Kaynak klasördeki tüm CSV'leri bul
+# EN: Find all CSVs in the source folder
+$dosyalar = Get-ChildItem "\\YOUR_SERVER\YOUR_PATH$\*.csv"
+
+# TR: Her bir dosyayı oku ve birleştir
+# EN: Read and merge each file
+$tumVeri = foreach ($dosya in $dosyalar) {
+    Import-Csv $dosya.FullName
+}
+
+# TR: Masaüstüne ham liste olarak kaydet
+# EN: Save as a raw list to the Desktop
+$tumVeri | Export-Csv "$env:USERPROFILE\Desktop\Tum_Eklentiler_Ham_Liste.csv" -NoTypeInformation -Encoding UTF8
+
+
+----------------------------------------------------------------------------------------------------------------------
+
+<#
+    [TR] İHTİYAÇ: Şirket geneli (Tenant) istatistikleri. Toplam kullanım adetlerini görmek için.
+    [EN] NEED: Tenant-wide statistics. To see total usage counts across the organization.
+#>
+
+<#
+    TR: ADIM 2 - Birleştirilmiş listedeki eklentileri gruplar ve kullanım sayılarını hesaplar.
+    EN: STEP 2 - Groups extensions in the merged list and calculates usage counts.
+#>
+
+# TR: Bir önceki adımda oluşan ham listeyi içeri aktar
+# EN: Import the raw list created in the previous step
+$hamListe = Import-Csv "$env:USERPROFILE\Desktop\Tum_Eklentiler_Ham_Liste.csv"
+
+# TR: Eklenti ID'sine göre grupla ve adetleri hesapla
+# EN: Group by Extension ID and calculate counts
+$ozet = $hamListe | Group-Object ExtensionID | Select-Object `
+    @{Name="Eklenti_ID"; Expression={$_.Name}}, `
+    @{Name="Toplam_Adet"; Expression={$_.Count}} | `
+    Sort-Object Toplam_Adet -Descending
+
+# TR: Özet raporu CSV olarak kaydet
+# EN: Save the summary report as CSV
+$ozet | Export-Csv "$env:USERPROFILE\Desktop\Eklenti_Ozet_Raporu.csv" -NoTypeInformation -Encoding UTF8
+
+# TR: Sonucu ekrana yazdır
+# EN: Output result to screen
+$ozet | Out-String -Stream
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+<#
+    [TR] İHTİYAÇ: İsimlendirilmiş son rapor. Denetim ve güvenlik analizi için isimleri çözümler.
+    [EN] NEED: Final resolved report. Resolves names for auditing and security analysis.
+#>
+
+<#
+    TR: ADIM 3 - Eklenti ID'lerini kullanarak Chrome ve Edge mağazalarından isimleri çeker.
+    EN: STEP 3 - Fetches names from Chrome and Edge stores using Extension IDs.
+#>
+
+$desktop = [Environment]::GetFolderPath("Desktop")
+$inputFile  = "$desktop\Eklenti_Ozet_Raporu.csv" # TR: Adım 2'den gelen dosya
+$outputFile = "$desktop\TAM_EKLENTI_LISTESI_ISIMLI_SONUC.csv"
+
+# TR: Veriyi oku ve tarayıcı başlığı (User-Agent) tanımla
+# EN: Read data and define User-Agent
+$data = Import-Csv -Path $inputFile
+$headers = @{ "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+
+$result = foreach ($row in $data) {
+    # TR: ID sütununu temizleyerek al
+    # EN: Get the ID column securely and trim
+    $prop = $row.PSObject.Properties | Select-Object -First 1
+    if (-not $prop -or -not $prop.Value) { continue }
+    $id = "$($prop.Value)".Trim()
+    if ([string]::IsNullOrWhiteSpace($id) -or $id -eq "Temp") { continue }
+
+    $name = $null
+    $source = $null
+
+    # 1️ TR: Chrome Mağazasında Ara / EN: Try Chrome Store
+    try {
+        $chromeUrl = "https://chrome.google.com/webstore/detail/$id"
+        $html = Invoke-WebRequest -Uri $chromeUrl -Headers $headers -TimeoutSec 15
+        if ($html.Content -match "<title>(.*?) - Chrome Web Store</title>") {
+            $name = $matches[1]
+            $source = "Chrome"
+        }
+    } catch {}
+
+    # 2️ TR: Edge Mağazasında Ara / EN: Try Edge Store
+    if (-not $name) {
+        try {
+            $edgeUrl = "https://microsoftedge.microsoft.com/addons/detail/$id"
+            $html = Invoke-WebRequest -Uri $edgeUrl -Headers $headers -TimeoutSec 15
+            if ($html.Content -match "<title>(.*?)</title>") {
+                $name = $matches[1]
+                $source = "Edge"
+            }
+        } catch {}
+    }
+
+    if (-not $name) {
+        $name = "Bulunamadi / Not Found"
+        $source = "---"
+    }
+
+    [PSCustomObject]@{
+        ID = $id
+        "Magaza_Adi" = $name
+        Kaynak = $source
+        Adet = $row.Toplam_Adet
+    }
+}
+
+# TR: Final raporu oluştur / EN: Create final report
+$result | Export-Csv $outputFile -NoTypeInformation -Encoding UTF8
+
+
+
+
