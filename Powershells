@@ -1,3 +1,5 @@
+<# 02_Data_Merger.ps1 #>
+
 <#
     [TR] İHTİYAÇ: Kullanıcı bazlı detaylı rapor. Hangi kullanıcının ne yüklediğini görmek için.
     [EN] NEED: Detailed user-based report. To see exactly what each user has installed.
@@ -24,6 +26,7 @@ $tumVeri | Export-Csv "$env:USERPROFILE\Desktop\Tum_Eklentiler_Ham_Liste.csv" -N
 
 
 ----------------------------------------------------------------------------------------------------------------------
+<# 03_Usage_Summarizer.ps1 #>
 
 <#
     [TR] İHTİYAÇ: Şirket geneli (Tenant) istatistikleri. Toplam kullanım adetlerini görmek için.
@@ -56,6 +59,7 @@ $ozet | Out-String -Stream
 
 
 ------------------------------------------------------------------------------------------------------------------------
+<# 04_Store_Resolver.ps1 #>
 
 <#
     [TR] İHTİYAÇ: İsimlendirilmiş son rapor. Denetim ve güvenlik analizi için isimleri çözümler.
